@@ -452,8 +452,9 @@
             <artifactId>poi-ooxml</artifactId>
         </dependency>
         <dependency>
-            <groupId>rome</groupId>
+            <groupId>com.rometools</groupId>
             <artifactId>rome</artifactId>
+            <version>1.10.0</version>
         </dependency>
         <dependency>
             <groupId>rome</groupId>
@@ -515,7 +516,7 @@
         <dependency>
             <groupId>org.rometools</groupId>
             <artifactId>rome-modules</artifactId>
-            <version>1.0</version>
+            <version>1.10.0</version>
         </dependency>
         <dependency>
             <groupId>gr.ekt.bte</groupId>

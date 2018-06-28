@@ -524,12 +524,12 @@
 			<!-- Description row -->
 			<xsl:when
 				test="$clause = 12 and (dim:field[@element='description' and not(@qualifier)])">
-				<dl id="item-description" class="dl-horizontal linkify">
+				<dl id="item-description" class="dl-horizontal">
 					<dt style="text-align: left">
 						<i class="fa fa-file-text-o">&#160;</i>
 						<i18n:text>xmlui.dri2xhtml.METS-1.0.item-description</i18n:text>
 					</dt>
-					<dd style="white-space: pre-line;">
+					<dd style="white-space: pre-line;" class="linkify">
 						<xsl:if
 							test="count(dim:field[@element='description' and not(@qualifier)]) &gt; 1 and not(count(dim:field[@element='description' and @qualifier='abstract']) &gt; 1)">
 							<div class="spacer">&#160;</div>

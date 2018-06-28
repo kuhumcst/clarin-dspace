@@ -32,10 +32,10 @@ import org.apache.log4j.Logger;
 import org.dspace.content.DSpaceObject;
 import org.dspace.core.ConfigurationManager;
 
-import com.sun.syndication.feed.module.opensearch.OpenSearchModule;
-import com.sun.syndication.feed.module.opensearch.entity.OSQuery;
-import com.sun.syndication.feed.module.opensearch.impl.OpenSearchModuleImpl;
-import com.sun.syndication.io.FeedException;
+import com.rometools.module.opensearch.OpenSearchModule;
+import com.rometools.module.opensearch.entity.OSQuery;
+import com.rometools.module.opensearch.impl.OpenSearchModuleImpl;
+import com.rometools.rome.io.FeedException;
 
 /**
  * Utility Class with static methods for producing OpenSearch-compliant search results,
@@ -210,8 +210,8 @@ public class OpenSearch
         }
     	
         SyndicationFeed feed = new SyndicationFeed(labels.get(SyndicationFeed.MSG_UITYPE));
-        feed.populate(null, scope, results, labels);
         feed.setType(format);
+        feed.populate(null, scope, results, labels);
         feed.addModule(openSearchMarkup(query, totalResults, start, pageSize));
     	return feed;
 	}

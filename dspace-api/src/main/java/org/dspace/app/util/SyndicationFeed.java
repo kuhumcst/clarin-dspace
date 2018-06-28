@@ -30,25 +30,29 @@ import org.dspace.core.ConfigurationManager;
 import org.dspace.core.Constants;
 import org.dspace.handle.HandleManager;
 
-import com.sun.syndication.feed.synd.SyndFeed;
-import com.sun.syndication.feed.synd.SyndFeedImpl;
-import com.sun.syndication.feed.synd.SyndEntry;
-import com.sun.syndication.feed.synd.SyndEntryImpl;
-import com.sun.syndication.feed.synd.SyndEnclosure;
-import com.sun.syndication.feed.synd.SyndEnclosureImpl;
-import com.sun.syndication.feed.synd.SyndImage;
-import com.sun.syndication.feed.synd.SyndImageImpl;
-import com.sun.syndication.feed.synd.SyndPerson;
-import com.sun.syndication.feed.synd.SyndPersonImpl;
-import com.sun.syndication.feed.synd.SyndContent;
-import com.sun.syndication.feed.synd.SyndContentImpl;
-import com.sun.syndication.feed.module.DCModuleImpl;
-import com.sun.syndication.feed.module.DCModule;
-import com.sun.syndication.feed.module.Module;
-import com.sun.syndication.feed.module.itunes.*;
-import com.sun.syndication.feed.module.itunes.types.Duration;
-import com.sun.syndication.io.SyndFeedOutput;
-import com.sun.syndication.io.FeedException;
+import com.rometools.rome.feed.synd.SyndFeed;
+import com.rometools.rome.feed.synd.SyndFeedImpl;
+import com.rometools.rome.feed.synd.SyndEntry;
+import com.rometools.rome.feed.synd.SyndEntryImpl;
+import com.rometools.rome.feed.synd.SyndEnclosure;
+import com.rometools.rome.feed.synd.SyndEnclosureImpl;
+import com.rometools.rome.feed.synd.SyndImage;
+import com.rometools.rome.feed.synd.SyndImageImpl;
+import com.rometools.rome.feed.synd.SyndLink;
+import com.rometools.rome.feed.synd.SyndLinkImpl;
+import com.rometools.rome.feed.synd.SyndPerson;
+import com.rometools.rome.feed.synd.SyndPersonImpl;
+import com.rometools.rome.feed.synd.SyndContent;
+import com.rometools.rome.feed.synd.SyndContentImpl;
+import com.rometools.rome.feed.module.DCModuleImpl;
+import com.rometools.rome.feed.module.DCModule;
+import com.rometools.rome.feed.module.Module;
+import com.rometools.modules.atom.modules.AtomLinkModuleImpl;
+import com.rometools.rome.feed.atom.Link;
+import com.rometools.modules.itunes.*;
+import com.rometools.modules.itunes.types.Duration;
+import com.rometools.rome.io.SyndFeedOutput;
+import com.rometools.rome.io.FeedException;
 
 import org.apache.log4j.Logger;
 import org.dspace.content.Bundle;
@@ -63,7 +67,9 @@ import org.dspace.content.Bundle;
  * uniform for both.
  *
  * @author Larry Stone
+ * 
  */
+
 public class SyndicationFeed
 {
     private static final Logger log = Logger.getLogger(SyndicationFeed.class);
@@ -135,7 +141,7 @@ public class SyndicationFeed
      */
     public SyndicationFeed(String ui)
     {
-        feed = new SyndFeedImpl();
+        feed = new CustomSyndFeed();
         uiType = ui;
     }
 
@@ -203,10 +209,39 @@ public class SyndicationFeed
         }
         feed.setTitle(labels.containsKey(MSG_FEED_TITLE) ?
                             localize(labels, MSG_FEED_TITLE) : defaultTitle);
-        feed.setLink(objectURL);
+        
+        if (feed.getFeedType().equals("atom_1.0")) {
+            List<SyndLink> links = new ArrayList<SyndLink>();
+            
+            SyndLink selfLink = new SyndLinkImpl();
+            selfLink.setHref(resolveURL(request, null) + "/feed/" + feed.getFeedType() + "/site");
+            selfLink.setType("application/rss+xml");
+            selfLink.setRel("self");
+            links.add(selfLink);
+
+            SyndLink altLink = new SyndLinkImpl();
+            altLink.setHref(resolveURL(request, null));
+            altLink.setRel("alternate");
+            links.add(altLink);
+
+            feed.setLinks(links);
+        } else {
+            AtomLinkModuleImpl atomLinkModule = new AtomLinkModuleImpl();
+            
+            Link l = new Link();
+            l.setHref(resolveURL(request, null) + "/feed/" + feed.getFeedType() + "/site");
+            l.setType("application/rss+xml");
+            l.setRel("self");
+
+            atomLinkModule.setLink(l);
+            
+            feed.setLink(objectURL);
+            feed.getModules().add(atomLinkModule);
+        }
+
         feed.setPublishedDate(new Date());
         feed.setUri(objectURL);
-
+        
         // add logo if we found one:
         if (logoURL != null)
         {
@@ -246,12 +281,13 @@ public class SyndicationFeed
                 entry.setTitle(title == null ? localize(labels, MSG_UNTITLED) : title);
              
                 // "published" date -- should be dc.date.issued
-                String pubDate = getOneDC(item, dateField);
+                /*String pubDate = getOneDC(item, dateField);
                 if (pubDate != null)
                 {
                     entry.setPublishedDate((new DCDate(pubDate)).toDate());
                     hasDate = true;
-                }
+                }*/
+                
                 // date of last change to Item
                 entry.setUpdatedDate(item.getLastModified());
              
@@ -442,11 +478,6 @@ public class SyndicationFeed
     public void setType(String feedType)
     {
         feed.setFeedType(feedType);
-        // XXX FIXME: workaround ROME 1.0 bug, it puts invalid image element in rss1.0
-        if ("rss_1.0".equals(feedType))
-        {
-            feed.setImage(null);
-        }
     }
 
     /**
@@ -536,9 +567,8 @@ public class SyndicationFeed
                 }
                 else
                 {
-                    baseURL = (request.isSecure()) ? "https://" : "http://";
-                    baseURL += ConfigurationManager.getProperty("dspace.hostname");
-                    baseURL += ":" + request.getServerPort();
+                    baseURL = "https://" + ConfigurationManager.getProperty("dspace.hostname");
+                    baseURL += (request.getServerPort() == 80) ? "" : ":" + request.getServerPort();
                     baseURL += request.getContextPath();
                 }
             }
@@ -572,3 +602,17 @@ public class SyndicationFeed
     }
 }
 
+class CustomSyndFeed extends SyndFeedImpl {
+
+    protected Date publishedDate;
+
+    @Override
+    public Date getPublishedDate() {
+        return publishedDate;
+    }
+
+    @Override
+    public void setPublishedDate(final Date publishedDate) {
+        this.publishedDate = new Date(publishedDate.getTime());
+    }
+}
